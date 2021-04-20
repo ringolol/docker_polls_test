@@ -1,0 +1,58 @@
+version: '3.7'
+    
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+  web:
+    build: ./polls_test
+    command: gunicorn polls_test.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/code/staticfiles
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - 8000
+    depends_on:
+      - db
+    env_file:
+      - ./.env.prod
+  migrate:
+    build: ./polls_test
+    command: python manage.py migrate
+    depends_on:
+      - web
+      - db
+    env_file:
+      - ./.env.prod
+    volumes:
+      - static_volume:/code/staticfiles
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/code/staticfiles
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - web
+  static:
+    build: ./polls_test
+    command: python manage.py collectstatic --noinput
+    depends_on:
+      - web
+      - db
+    env_file:
+      - ./.env.prod
+    volumes:
+      - static_volume:/code/staticfiles
+
+volumes:
+  postgres_data:
+  static_volume:

@@ -1,0 +1,3 @@
+[submodule "polls_test"]
+	path = polls_test
+	url = git@github.com:ringolol/polls_test.git
